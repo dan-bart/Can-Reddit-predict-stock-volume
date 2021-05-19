@@ -6,7 +6,8 @@ import re
 def get_dict():
     data = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')
     scrapedSAP = data[0]
-    data = scrapedSAP[scrapedSAP['Symbol'].str.len()>0][["Symbol","Security"]]
+    #removing tickers with length one
+    data = scrapedSAP[scrapedSAP['Symbol'].str.len()>1][["Symbol","Security"]]
     data = pd.DataFrame(data)
 
     #populate the dictionary
@@ -105,4 +106,3 @@ def get_dict():
         mainDict[i] = combined
 
     return mainDict
-
