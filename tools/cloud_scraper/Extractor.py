@@ -3,6 +3,7 @@ import re
 import time
 import json
 import pandas as pd
+
 class Reddit_Extractor:
     def __init__(self, credentials):
         self.reddit =  praw.Reddit(
