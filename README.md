@@ -24,6 +24,8 @@ The purpose of this project is to prove the authors ability to collaboratively p
     │   Stock_Dictionary.py                   #Returns a json dictionary of S&P ticker variants.
     │   Ticker_Counter.py                     #Standardizes parquet data into a matrix with daily counts for each ticker.
     │   Yahoo_extractor.ipynb
+    ├─── cloud_scraper                        # Files required to deploy a lambda function with serverless.
+                                                The function runs daily and saves the resulting dataframe as csv in AWS S3 bucket.
 ```
 
 
