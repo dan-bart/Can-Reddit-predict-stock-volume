@@ -3,11 +3,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import copy
 
-class Data_analyzer:
+class Data_Analyzer:
     '''Analyze various aspects of the Yahoo and Reddit data.
     
     :usage:
-        D = DeckAnalyzer()  
+        D = Data_Analyzer()  
     '''
     def __init__(self):
         '''
@@ -94,7 +94,7 @@ class Data_analyzer:
         
         return stock_data
     
-    def plot_stock_data(self, stock_name):
+    def plot_stock_data(self, stock_name = None):
         '''Specify a stock name and return a plot showing trends in development of reddit mentions
             and volume traded.
             
@@ -107,14 +107,18 @@ class Data_analyzer:
         :returns:
         -None: A plot showing trends in development of reddit mentions and volume traded.
         '''
-        data = self.get_stock_data(stock_name)
-        
-        data['Mentions'].plot()
-        data['Volume'].plot()
+        if stock_name == None:
+            pass
+        else:
+            for s in stock_name:
+                data = self.get_stock_data(s)
 
-        plt.title(f'Daily percentage change - ' + stock_name)
-        plt.legend()
-        plt.show()
+                data['Mentions'].plot()
+                data['Volume'].plot()
+
+                plt.title(f'Daily percentage change - ' + s)
+                plt.legend()
+                plt.show()
         
         return None
 
@@ -331,15 +335,17 @@ class Data_analyzer:
             to avoid duplicate printing of the power value.
         
         '''
-        incidence_df = self.get_incidences(acro, offset_mentions_by, offset_volume_by)
+        incidence_df = self.get_incidences(offset_mentions_by, offset_volume_by, acro)
         power = incidence_df.loc['Mean', 'Within 5%']
 
         if power > 0.5:
             print('Reddit did a great job this time.')
         elif power > 0.25:
             print('Reddit did an OK job this time.')
-        else:
+        elif power > 0:
             print('Reddit did not do well this time.')
+        else:
+            print('Reddit did not do well this time. Maybe try increasing the number of stocks in order for LLN to do its thing.')
             
         power = "{:.2%}".format(power) #Converting to a percentage
         
@@ -360,4 +366,40 @@ class Data_analyzer:
               f'The remaining {500 - (len(incidence_df) - 1)} stocks from the S&P 500 were not mentioned by Reddit at all.')
         
         return None
+    
+    def present_outcome(self, start_date = None, end_date = None, offset_mentions_by = 0, offset_volume_by = 0, acro = None):
+        '''Specify the stock names and the amount of days, by which to offset the calculation and the date range
+            for which to present the outcome. Return the power for said parameters and display the results graphically.
+            
+        :args:
+        - acro (list): Tickers of the stocks to analyze.
+        - offset_mentions (int): Number of days by which to offset the reddit mentions data to the right.
+        - offset_volume (int): Number of days by which to offset the colume traded data to the right.
+        - start_date (str): The day from which to start the analysis.
+        - end_date (str): The day until which to conduct the analysis.
+        
+        :usage:
+            self.present_outcome(start_date = '2021-05-15', end_date = '2021-06-15',
+                shift_days_by_mentions = 1, shift_days_by_volume = 3, stock_list = ['AAPL', 'AMZN', 'AMD'])
+        
+        :returns:
+        -None: The power parameter for said parameters and graphical representation of the results are printed.  
+        '''
+        self.get_power(offset_mentions_by, offset_volume_by, acro)
+        
+        if acro == None:
+            self.plot_all_data() 
+        elif len(acro)<=10:
+            self.plot_stock_data(acro)
+        else:
+            self.plot_stock_data(acro[:10])
+
+        return None
+    
+    
+    
+    
+    
+    
+    
     
