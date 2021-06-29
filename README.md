@@ -10,6 +10,7 @@ The purpose of this project is to prove the authors ability to collaboratively p
 ```
 │   daily_scraper.py                          #runs Extractor daily and saves the output in destined folder
 │   README.md
+|   presentation.ipynb                        #Main output of our project. Observe whether Reddit is able to predict stock movement.
 │   
 ├───data
 │   │   credentials.json                      #our Reddit credentials (dev-enabled account created for this project) 
@@ -20,10 +21,10 @@ The purpose of this project is to prove the authors ability to collaboratively p
 └───tools
     │   csv_to_parquet.py                     #one time use script when we decided to switch from CSVs to parquet format
     │   Extractor.py                          #Uses PRAW framework to scrape posts and comment form selected stock subreddits
-    │   Models.ipynb
+    │   Models.py                             #Thoroughly analyzes the data and prepares them to be presented.
     │   Stock_Dictionary.py                   #Returns a json dictionary of S&P ticker variants.
     │   Ticker_Counter.py                     #Standardizes parquet data into a matrix with daily counts for each ticker.
-    │   Yahoo_extractor.ipynb
+    │   Yahoo_extractor.py                    #Extracts stock trading data from Yahoo finance.
     ├─── cloud_scraper                        # Files required to deploy a lambda function with serverless.
                                                 The function runs daily and saves the resulting dataframe as csv in AWS S3 bucket.
 ```
