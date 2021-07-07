@@ -2,6 +2,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import copy
+import tools.Ticker_Counter as counter
+
 
 class Data_Analyzer:
     '''Analyze various aspects of the Yahoo and Reddit data.
@@ -16,8 +18,7 @@ class Data_Analyzer:
         self.yahoo_data = pd.read_csv('data/yahoo_data.csv', parse_dates=['Date'], infer_datetime_format="%b %d, %Y",
                          index_col = [0]).interpolate() #We use interpolation to linearly fill missing data
         
-        self.model_data = pd.read_csv('data/reddit_data.csv', parse_dates=['Unnamed: 0'], infer_datetime_format="%Y-%m-%d",
-                                 index_col = [0]).interpolate() 
+        self.model_data = self.get_reddit_data()
         self.model_data.index.name = 'Date'                      #Set index name to match with Yahoo data
         self.model_data.index = pd.to_datetime(self.model_data.index) #Convert the index to datetime type object
         
@@ -30,6 +31,12 @@ class Data_Analyzer:
         
         #Use the columns of stocks which appear in both data frames as a benchmark
         self.acro_new = self.model_data.columns.tolist()
+
+    def get_reddit_data(self):
+        path = "./data/daily_parquet_data/"
+        TickerMat = counter.Ticker_Matrix(path)
+        TickerMat.get_info()
+        return TickerMat.full_df
             
     def plot_all_data(self):
         '''Return a plot showing trends in reddit mentions and volume traded for 500 S&P stocks

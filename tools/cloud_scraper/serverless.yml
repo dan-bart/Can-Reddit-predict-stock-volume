@@ -33,4 +33,4 @@ functions:
   dailyScraper:
     handler: handler.dailyScraper
     events:
-     - schedule: cron(0 20 ? * * *)
+     - schedule: rate(1 day)
