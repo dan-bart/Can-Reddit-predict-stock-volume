@@ -15,7 +15,6 @@ The purpose of this project is to prove the authors ability to collaboratively p
 ├───data
 │   │   credentials.json                      #our Reddit credentials (dev-enabled account created for this project) 
 │   │   yahoo_data.csv
-│   │   reddit_data.csv
 │   ├───daily_parquet_data                    #folder containing daily scraped Reddit mentioned in parquet format
 │               
 └───tools
