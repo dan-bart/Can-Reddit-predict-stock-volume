@@ -45,6 +45,7 @@ class Data_Analyzer:
         print('Loading Reddit data. This may take a while.')
         path = "./data/daily_parquet_data/"
         TickerMat = counter.Ticker_Matrix(path)
+        TickerMat.get_info()
         print('Reddit data loaded successfully.')
         
         return TickerMat.ticker_matrix
@@ -272,72 +273,67 @@ class Data_Analyzer:
             self.get_incidences(acro = ['AAPL', 'AMD', 'AMZN'], offset_mentions_by = 1, offset_volume_by = 3)
             
         :returns:
-        - incidence_df (pd.DataFrame): A data frame capturing the incidence and incidence offset for stocks
-            specified by acro, along with variable 'Within 2.5%', which is equal to 1, if the incidences
-            are within 2.5% of each other on a given day.
-        
+        - incidence_df (pd.DataFrame): A data frame capturing the incidence and offset incidences for stocks
+            specified by acro.
         '''
         if acro == None:
             acro = self.acro_new
         
         incidence_df = pd.DataFrame({'Stock': pd.Series([], dtype='str'),
                                     'Incidence': pd.Series([], dtype='int'),
-                                    f'Incidence offset': pd.Series([], dtype='float')})
+                                    f'Incidence offset by 1': pd.Series([], dtype='float'),
+                                    f'Incidence offset by 2': pd.Series([], dtype='float'),
+                                    f'Incidence offset custom': pd.Series([], dtype='float')})
         for a in acro:
             try: 
                 stock_name = a
                 incidence = self.get_incidence(a)
-                incidence_3 =self.get_incidence_offset(a, offset_mentions = offset_mentions_by, offset_volume = offset_volume_by)
+                incidence_1 = self.get_incidence_offset(a, offset_mentions = 0, offset_volume = 1)
+                incidence_2 = self.get_incidence_offset(a, offset_mentions = 0, offset_volume = 2)
+                incidence_custom = self.get_incidence_offset(a, offset_mentions = offset_mentions_by, offset_volume = offset_volume_by)
                 
                 new_row = pd.DataFrame({'Stock': pd.Series([stock_name]),
                                         'Incidence': pd.Series([incidence], dtype='float'),
-                                        f'Incidence offset': pd.Series([incidence_3], dtype='float')})
+                                        f'Incidence offset by 1': pd.Series([incidence_1], dtype='float'),
+                                        f'Incidence offset by 2': pd.Series([incidence_2], dtype='float'),
+                                        f'Incidence offset custom': pd.Series([incidence_custom], dtype='float')})
                 incidence_df = incidence_df.append(new_row)
 
             except:
                 stock_name = a
                 incidence = np.random.uniform(low = 0, high = 1)
-                incidence_3 = np.random.uniform(low = 0, high = 1)
+                incidence_1 = np.random.uniform(low = 0, high = 1)
+                incidence_2 = np.random.uniform(low = 0, high = 1)
+                incidence_custom = np.random.uniform(low = 0, high = 1)
                 
                 new_row = pd.DataFrame({'Stock': pd.Series([stock_name]),
                                         'Incidence': pd.Series([incidence], dtype='float'),
-                                        f'Incidence offset': pd.Series([incidence_3], dtype='float')})
+                                        f'Incidence offset by 1': pd.Series([incidence_1], dtype='float'),
+                                        f'Incidence offset by 2': pd.Series([incidence_2], dtype='float'),
+                                        f'Incidence offset custom': pd.Series([incidence_custom], dtype='float')})
                 incidence_df = incidence_df.append(new_row)
         
         
         incidence_mean = incidence_df['Incidence'].mean()
-        incidence_offset_mean = incidence_df['Incidence offset'].mean()
+        incidence_1_mean = incidence_df['Incidence offset by 1'].mean()
+        incidence_2_mean = incidence_df['Incidence offset by 2'].mean()
+        incidence_custom_mean = incidence_df['Incidence offset custom'].mean()
 
         row_total = pd.DataFrame({'Stock': 'Mean',
                                         'Incidence': pd.Series([incidence_mean], dtype = 'float'),
-                                        f'Incidence offset': pd.Series([incidence_offset_mean], dtype='float')})
+                                        f'Incidence offset by 1': pd.Series([incidence_1_mean], dtype='float'),
+                                        f'Incidence offset by 2': pd.Series([incidence_2_mean], dtype='float'),
+                                        f'Incidence offset custom': pd.Series([incidence_custom_mean], dtype='float')})
         incidence_df = incidence_df.append(row_total)
         
         incidence_df = incidence_df.set_index('Stock')
-        
-        within_2_5 = []
-        try:
-            for a in acro:
-                if (abs(incidence_df.loc[a, 'Incidence'] - incidence_df.loc[a, 'Incidence offset'])) < 0.025:
-                    within_2_5.append(1)
-                else:
-                    within_2_5.append(0)
-        except KeyError:
-            print('This stock does not appear in the data provided. Returning None.')
-            within_2_5.append(None)
-
-        within_2_5.append(None)    
-        
-        incidence_df['Within 2.5%'] = within_2_5
-        
-        incidence_df.loc['Mean', 'Within 2.5%'] = incidence_df['Within 2.5%'].mean()
-        
+             
         return incidence_df
     
-    def get_power(self, offset_mentions_by = 0, offset_volume_by = 0, acro = None):
+    def get_outcome(self, offset_mentions_by = 0, offset_volume_by = 0, acro = None):
         '''Specify the stock names and the amount of days, by which to offset the calculation and
-            print the power parameter for these parameters. Power represents the rate at which
-            reddit is able to predict stock movement.
+            print a table of outcomes, which contains information about how well reddit was able to
+            predict stock movement.
             
         :args:
         - acro (list): Tickers of the stocks to analyze.
@@ -348,45 +344,42 @@ class Data_Analyzer:
             self.get_power(offset_mentions_by = 1, offset_volume_by = 3, acro = ['AAPL', 'AMD', 'AMZN'])
             
         :returns:
-        - None: Prints the value of the power parameter, which represents the rate at which
-            reddit is able to predict stock movement. The return value is set to None in order
-            to avoid duplicate printing of the power value.
+        - incidence_df (pandas.DataFrame): The table of outcomes, which contains information about how well reddit was able to
+            predict stock movement.
         
         '''
         incidence_df = self.get_incidences(offset_mentions_by, offset_volume_by, acro)
-        power = incidence_df.loc['Mean', 'Within 2.5%']
+        incidence_custom = incidence_df.loc['Mean', 'Incidence offset custom']
 
-        if power > 0.5:
+        if incidence_custom > 0.5:
             print('Reddit did a great job this time.')
-        elif power > 0.25:
+        elif incidence_custom > 0.25:
             print('Reddit did an OK job this time.')
-        elif power > 0:
-            print('Reddit did not do well this time.')
         else:
-            print('Reddit did not do well this time. Maybe try increasing the number of stocks in order for LLN to do its thing.')
+            print('Reddit did not do well this time.')
             
-        power = "{:.2%}".format(power) #Converting to a percentage
+        incidence_custom = "{:.2%}".format(incidence_custom) #Converting to a percentage
         
         offset = offset_volume_by - offset_mentions_by
         
         if offset < -1:
-            print(f'The trend in its stock mentions compared to the stock movement {-offset} days ago was the same in {power} of cases.')
+            print(f'The trend in its stock mentions compared to the stock movement {-offset} days ago was the same in {incidence_custom} of cases.')
         elif offset == -1:
-            print(f'The trend in its stock mentions compared to the stock movement {-offset} day ago was the same in {power} of cases.')
+            print(f'The trend in its stock mentions compared to the stock movement {-offset} day ago was the same in {incidence_custom} of cases.')
         elif offset == 0:
-            print(f'Its stock mentions coincided with stock movement on the same day in {power} of cases.')
+            print(f'Its stock mentions coincided with stock movement on the same day in {incidence_custom} of cases.')
         elif offset == 1:
-            print(f'It was able to predict volume of traded stocks {offset} day ahead in {power} of cases.')
+            print(f'It was able to predict volume of traded stocks {offset} day ahead in {incidence_custom} of cases.')
         else:
-            print(f'It was able to predict volume of traded stocks {offset} days ahead in {power} of cases.')
+            print(f'It was able to predict volume of traded stocks {offset} days ahead in {incidence_custom} of cases.')
             
         print(f'The total number of stocks analyzed was {len(incidence_df) - 1}.')
         
-        return None
+        return incidence_df
     
     def present_outcome(self, offset_mentions_by = 0, offset_volume_by = 0, acro = None):
         '''Specify the stock names and the amount of days, by which to offset the calculation.
-            Return the power for said parameters and display the results graphically.
+            Return the outcome table representing how well reddit was able to predict stock movement.
             
         :args:
         - acro (list): Tickers of the stocks to analyze.
@@ -397,9 +390,10 @@ class Data_Analyzer:
             self.present_outcome(shift_days_by_mentions = 1, shift_days_by_volume = 3, stock_list = ['AAPL', 'AMZN', 'AMD'])
         
         :returns:
-        - None: The power parameter for said parameters and graphical representation of the results are printed.  
+        - incidence_df (pandas.DataFrame): The table of outcomes, which contains information about how well reddit was able to
+            predict stock movement. Also prints out graphical representation of said trends.
         '''
-        self.get_power(offset_mentions_by, offset_volume_by, acro)
+        incidence_df = self.get_outcome(offset_mentions_by, offset_volume_by, acro)
         
         if acro == None:
             self.plot_all_data() 
@@ -408,7 +402,7 @@ class Data_Analyzer:
         else:
             self.plot_stock_data(acro[:10])
 
-        return None
+        return incidence_df
     
     
     
