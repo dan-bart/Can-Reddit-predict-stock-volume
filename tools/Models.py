@@ -21,6 +21,7 @@ class Data_Analyzer:
         self.model_data = self.get_reddit_data()
         self.model_data.index.name = 'Date'                      #Set index name to match with Yahoo data
         self.model_data.index = pd.to_datetime(self.model_data.index) #Convert the index to datetime type object
+        self.model_data = self.model_data.sort_index(ascending = False)
         
         #Discard stocks which are not mentioned by reddit; one can not compare the two data sets on these stocks
         indexer_yahoo = self.yahoo_data.columns.isin(self.model_data.columns).tolist()
@@ -33,10 +34,20 @@ class Data_Analyzer:
         self.acro_new = self.model_data.columns.tolist()
 
     def get_reddit_data(self):
+        '''Load reddit data into Python.
+        
+        :usage:
+            self.get_reddit_data()
+            
+        :returns:
+        - TickerMat.full_df (pandas.DataFrame): A data frame containing the reddit data.
+        '''
+        print('Loading Reddit data. This may take a while.')
         path = "./data/daily_parquet_data/"
         TickerMat = counter.Ticker_Matrix(path)
-        TickerMat.get_info()
-        return TickerMat.full_df
+        print('Reddit data loaded successfully.')
+        
+        return TickerMat.ticker_matrix
             
     def plot_all_data(self):
         '''Return a plot showing trends in reddit mentions and volume traded for 500 S&P stocks
@@ -68,9 +79,9 @@ class Data_Analyzer:
         fig, (ax1, ax2) = plt.subplots(2,1)
         fig.suptitle('Observing the behavior of our data')
 
-        ax1.plot(mention_count)
+        ax1.plot(np.log(mention_count))
         ax1.set_xticks(ticks_mtn)
-        ax1.set_ylabel('Mention count')
+        ax1.set_ylabel('Mention count (log)')
 
         #Transformed to logarithm to better observe the effect
         ax2.plot(np.log(volume_traded))
@@ -262,8 +273,8 @@ class Data_Analyzer:
             
         :returns:
         - incidence_df (pd.DataFrame): A data frame capturing the incidence and incidence offset for stocks
-            specified by acro, along with variable 'Within 5%', which is equal to 1, if the incidences
-            are within 5% of each other on a given day.
+            specified by acro, along with variable 'Within 2.5%', which is equal to 1, if the incidences
+            are within 2.5% of each other on a given day.
         
         '''
         if acro == None:
@@ -304,22 +315,22 @@ class Data_Analyzer:
         
         incidence_df = incidence_df.set_index('Stock')
         
-        within_5 = []
+        within_2_5 = []
         try:
             for a in acro:
-                if (abs(incidence_df.loc[a, 'Incidence'] - incidence_df.loc[a, 'Incidence offset'])) < 0.05:
-                    within_5.append(1)
+                if (abs(incidence_df.loc[a, 'Incidence'] - incidence_df.loc[a, 'Incidence offset'])) < 0.025:
+                    within_2_5.append(1)
                 else:
-                    within_5.append(0)
+                    within_2_5.append(0)
         except KeyError:
             print('This stock does not appear in the data provided. Returning None.')
-            within_5.append(None)
+            within_2_5.append(None)
 
-        within_5.append(None)    
+        within_2_5.append(None)    
         
-        incidence_df['Within 5%'] = within_5
+        incidence_df['Within 2.5%'] = within_2_5
         
-        incidence_df.loc['Mean', 'Within 5%'] = incidence_df['Within 5%'].mean()
+        incidence_df.loc['Mean', 'Within 2.5%'] = incidence_df['Within 2.5%'].mean()
         
         return incidence_df
     
@@ -334,7 +345,7 @@ class Data_Analyzer:
         - offset_volume (int): Number of days by which to offset the colume traded data to the right.
         
         :usage:
-            self.get_power(acro = ['AAPL', 'AMD', 'AMZN'], offset_mentions_by = 1, offset_volume_by = 3)
+            self.get_power(offset_mentions_by = 1, offset_volume_by = 3, acro = ['AAPL', 'AMD', 'AMZN'])
             
         :returns:
         - None: Prints the value of the power parameter, which represents the rate at which
@@ -343,7 +354,7 @@ class Data_Analyzer:
         
         '''
         incidence_df = self.get_incidences(offset_mentions_by, offset_volume_by, acro)
-        power = incidence_df.loc['Mean', 'Within 5%']
+        power = incidence_df.loc['Mean', 'Within 2.5%']
 
         if power > 0.5:
             print('Reddit did a great job this time.')
@@ -369,28 +380,24 @@ class Data_Analyzer:
         else:
             print(f'It was able to predict volume of traded stocks {offset} days ahead in {power} of cases.')
             
-        print(f'The total number of stocks analyzed was {len(incidence_df) - 1}. '
-              f'The remaining {500 - (len(incidence_df) - 1)} stocks from the S&P 500 were not mentioned by Reddit at all.')
+        print(f'The total number of stocks analyzed was {len(incidence_df) - 1}.')
         
         return None
     
-    def present_outcome(self, start_date = None, end_date = None, offset_mentions_by = 0, offset_volume_by = 0, acro = None):
-        '''Specify the stock names and the amount of days, by which to offset the calculation and the date range
-            for which to present the outcome. Return the power for said parameters and display the results graphically.
+    def present_outcome(self, offset_mentions_by = 0, offset_volume_by = 0, acro = None):
+        '''Specify the stock names and the amount of days, by which to offset the calculation.
+            Return the power for said parameters and display the results graphically.
             
         :args:
         - acro (list): Tickers of the stocks to analyze.
         - offset_mentions (int): Number of days by which to offset the reddit mentions data to the right.
         - offset_volume (int): Number of days by which to offset the colume traded data to the right.
-        - start_date (str): The day from which to start the analysis.
-        - end_date (str): The day until which to conduct the analysis.
         
         :usage:
-            self.present_outcome(start_date = '2021-05-15', end_date = '2021-06-15',
-                shift_days_by_mentions = 1, shift_days_by_volume = 3, stock_list = ['AAPL', 'AMZN', 'AMD'])
+            self.present_outcome(shift_days_by_mentions = 1, shift_days_by_volume = 3, stock_list = ['AAPL', 'AMZN', 'AMD'])
         
         :returns:
-        -None: The power parameter for said parameters and graphical representation of the results are printed.  
+        - None: The power parameter for said parameters and graphical representation of the results are printed.  
         '''
         self.get_power(offset_mentions_by, offset_volume_by, acro)
         

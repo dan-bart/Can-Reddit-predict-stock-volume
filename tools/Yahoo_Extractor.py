@@ -5,6 +5,7 @@ from datetime import date
 import datetime
 import pandas as pd
 import numpy as np
+from io import StringIO
 
 #path = "C:\\Users\\hso20\\Python\\Project\\YahooData\\"
 
@@ -77,23 +78,14 @@ class Yahoo_Extractor:
         :returns:
         - stocksDF (pd.DataFrame): A data frame containing information about volume traded for the desired stock.
         '''
-        link = 'https://finance.yahoo.com/quote/' + acro + '/history?p=' + acro
+        link = 'https://query1.finance.yahoo.com/v7/finance/download/' + acro + '?modules=balanceSheetHistory&period1=1616014800&period2=1625688000'
         r = requests.get(link)
-        r.encoding = 'utf-8-sig'
-        soup = BeautifulSoup(r.text, 'html.parser')
-        dates = self.get_dates()
-        stocksDF = pd.DataFrame(index = dates, columns = [acro]) #an empty data frame for the stock
-        for tr in soup.findAll('tr', {'class':'BdT Bdc($seperatorColor) Ta(end) Fz(s) Whs(nw)'}):
-            Date = pd.Series(tr.contents[0].text)
-            if Date.isin(dates)[0] == True: 
-                try:
-                    Volume = tr.contents[6].text.replace(",","")
-                except IndexError:
-                    Volume = None
-                stocksDF.loc[Date,:] = Volume #replace NaNs with the traded volume
-            else:
-                continue
-            
+        r_text = StringIO(r.text)
+        temp = pd.read_csv(r_text)[['Date', 'Volume']].set_index('Date')
+        temp = temp.sort_index(ascending = False)
+        temp.index = pd.to_datetime(temp.index).strftime("%b %d, %Y")
+        stocksDF = temp.rename(columns = {'Volume' : acro})
+
         return stocksDF
     
     def join_data(self, acro = None):
@@ -118,6 +110,7 @@ class Yahoo_Extractor:
         for a in acro:
             start = time.time()
             stocksDF = self.get_data(a)
+            time.sleep(1)
             data = pd.concat([data, stocksDF], axis = 1, copy = False)
             end = time.time()
             print('Ellapsed time for stock', a)
@@ -148,7 +141,7 @@ class Yahoo_Extractor:
         stringEpoch = today.strftime("%d_%m_%y")
         s = ''
         nameVars = [path,stringEpoch,".csv"]
-        outputDF.to_csv(path_or_buf=s.join(nameVars),sep = ',', index=True, encoding='utf-8-sig')
+        data.to_csv(path_or_buf=s.join(nameVars),sep = ',', index=True, encoding='utf-8-sig')
         
         return None
 

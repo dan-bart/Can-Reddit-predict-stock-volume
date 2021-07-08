@@ -17,7 +17,7 @@ class Ticker_Matrix:
             df = df.drop(labels = 'text',axis = 1) # dropping biggest column to prevent memory overloading
             li.append(df)
         full_df = pd.concat(li)
-        print(full_df.dtypes)
+        #print(full_df.dtypes)
 
 
         full_df = full_df.fillna('') #change NaNs to empty string
