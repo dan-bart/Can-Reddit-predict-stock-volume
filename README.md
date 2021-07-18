@@ -4,6 +4,8 @@ Collaborative work with Petr Cala for IES Course Data Processing in Python. We s
 
 The purpose of this project is to prove the authors ability to collaboratively produce a complex project with proper structure and clean code. We show our ability to scrape data and efficiently use object oriented programming. Reaching a definite conclusion for our project topic would require advanced use of NLP (contextual analysis).
 
+We also learned the basics of AWS by deploying the daily scraper on cloud using serverless. The script runs every day and saves the results in AWS s3 bucket.
+
 ## Project structure
 
 
